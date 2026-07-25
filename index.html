@@ -66,7 +66,26 @@
   .toolbar {
     padding: 18px 24px; display: flex; gap: 20px; flex-wrap: wrap;
     align-items: center; border-bottom: 1px solid var(--line); background: var(--panel);
+    overflow: hidden; transition: max-height .25s ease, padding .25s ease, opacity .2s ease;
   }
+  .filters {
+    display: flex; gap: 20px; flex-wrap: wrap; align-items: center;
+  }
+  body.filters-collapsed .toolbar {
+    max-height: 0 !important; padding-top: 0; padding-bottom: 0;
+    opacity: 0; pointer-events: none; border-bottom-color: transparent;
+  }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .header-right { display: flex; align-items: center; gap: 14px; margin-left: auto; }
+  .collapse-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: transparent; color: var(--muted);
+    border: none; border-radius: 8px;
+    padding: 4px; cursor: pointer; transition: color .15s;
+  }
+  .collapse-btn:hover { color: var(--accent); }
+  .collapse-btn svg { transition: transform .25s ease; }
+  body.filters-collapsed .collapse-btn svg { transform: rotate(-90deg); }
   .field-group { display: flex; flex-direction: column; gap: 5px; }
   .field-group > label {
     font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 600;
@@ -248,38 +267,47 @@
 
   <header>
     <div class="brand">
-      <h1>Mi <span>Gimnasio</span></h1>
+      <h1>Tava<span>gym</span></h1>
       <p>Tu biblioteca de entrenamientos</p>
     </div>
-    <div class="count-pill" id="countPill">0 vídeos</div>
+    <div class="header-right">
+      <div class="count-pill" id="countPill">0 vídeos</div>
+      <button class="collapse-btn" id="collapseBtn" title="Mostrar u ocultar filtros" aria-label="Mostrar u ocultar filtros">
+        <svg id="collapseArrow" viewBox="0 0 24 24" width="22" height="22"><path d="M7 10l5 5 5-5z" fill="currentColor"/></svg>
+      </button>
+    </div>
   </header>
 
   <div class="toolbar">
-    <div class="field-group">
-      <label>Categoría</label>
-      <div class="chips" id="catFilter"></div>
-    </div>
-    <div class="field-group">
-      <label>Dificultad</label>
-      <div class="chips" id="diffFilter">
-        <button class="chip active" data-diff="all">Todas</button>
-        <button class="chip" data-diff="easy">Fácil</button>
-        <button class="chip" data-diff="med">Media</button>
-        <button class="chip" data-diff="hard">Difícil</button>
+    <div class="filters" id="filters">
+      <div class="field-group">
+        <label>Categoría</label>
+        <div class="chips" id="catFilter"></div>
+      </div>
+      <div class="field-group">
+        <label>Dificultad</label>
+        <div class="chips" id="diffFilter">
+          <button class="chip active" data-diff="all">Todas</button>
+          <button class="chip" data-diff="easy">Fácil</button>
+          <button class="chip" data-diff="med">Media</button>
+          <button class="chip" data-diff="hard">Difícil</button>
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Orden</label>
+        <select id="sortSelect">
+          <option value="manual">Manual (arrastrar)</option>
+          <option value="title">Título A–Z</option>
+          <option value="recent">Añadido recientemente</option>
+        </select>
       </div>
     </div>
-    <div class="field-group">
-      <label>Orden</label>
-      <select id="sortSelect">
-        <option value="manual">Manual (arrastrar)</option>
-        <option value="title">Título A–Z</option>
-        <option value="recent">Añadido recientemente</option>
-      </select>
-    </div>
     <div class="spacer"></div>
-    <button class="btn" id="exportBtn">Exportar</button>
-    <button class="btn" id="importBtn">Importar</button>
-    <button class="btn btn-primary" id="addBtn">+ Añadir vídeo</button>
+    <div class="actions">
+      <button class="btn" id="exportBtn">Exportar</button>
+      <button class="btn" id="importBtn">Importar</button>
+      <button class="btn btn-primary" id="addBtn">+ Añadir vídeo</button>
+    </div>
   </div>
 
   <div class="gallery" id="gallery"></div>
@@ -407,6 +435,9 @@ function render() {
   renderGallery();
   const n = state.videos.length;
   document.getElementById("countPill").textContent = n + (n === 1 ? " vídeo" : " vídeos");
+  // si los filtros están desplegados, reajusta su altura al nuevo contenido
+  const tb = document.querySelector(".toolbar");
+  if (tb && !document.body.classList.contains("filters-collapsed")) tb.style.maxHeight = tb.scrollHeight + "px";
 }
 function renderCatFilter() {
   const el = document.getElementById("catFilter");
@@ -637,6 +668,24 @@ document.getElementById("diffFilter").querySelectorAll(".chip").forEach(b => {
   };
 });
 document.getElementById("sortSelect").onchange = (e) => { filter.sort = e.target.value; render(); };
+
+// colapsar/mostrar toda la barra (recuerda el estado)
+const collapseKey = "gym-filters-collapsed";
+function applyCollapse(collapsed) {
+  document.body.classList.toggle("filters-collapsed", collapsed);
+  const tb = document.querySelector(".toolbar");
+  tb.style.maxHeight = collapsed ? "0px" : tb.scrollHeight + "px";
+}
+document.getElementById("collapseBtn").onclick = () => {
+  const collapsed = !document.body.classList.contains("filters-collapsed");
+  applyCollapse(collapsed);
+  try { localStorage.setItem(collapseKey, collapsed ? "1" : "0"); } catch(e){}
+};
+window.addEventListener("load", () => {
+  let collapsed = false;
+  try { collapsed = localStorage.getItem(collapseKey) === "1"; } catch(e){}
+  applyCollapse(collapsed);
+});
 
 document.getElementById("fUrl").addEventListener("blur", async () => {
   const url = document.getElementById("fUrl").value.trim();
