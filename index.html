@@ -344,7 +344,7 @@
 <script>
 const DEFAULT_CATS = ["piernas","cardio","core","movilidad","brazos","espalda"];
 let state = { videos: [], cats: [...DEFAULT_CATS] };
-let filter = { cat: "all", diff: "all", sort: "manual" };
+let filter = { cats: [], diff: "all", sort: "manual" };
 let editingId = null;
 let formSel = { diff: null, cats: [] };
 let dragId = null;
@@ -412,21 +412,25 @@ function renderCatFilter() {
   const el = document.getElementById("catFilter");
   el.innerHTML = "";
   const all = document.createElement("button");
-  all.className = "chip" + (filter.cat === "all" ? " active" : "");
+  all.className = "chip" + (filter.cats.length === 0 ? " active" : "");
   all.textContent = "Todas";
-  all.onclick = () => { filter.cat = "all"; render(); };
+  all.onclick = () => { filter.cats = []; render(); };
   el.appendChild(all);
   state.cats.forEach(c => {
     const b = document.createElement("button");
-    b.className = "chip" + (filter.cat === c ? " active" : "");
+    b.className = "chip" + (filter.cats.includes(c) ? " active" : "");
     b.textContent = c;
-    b.onclick = () => { filter.cat = c; render(); };
+    b.onclick = () => {
+      if (filter.cats.includes(c)) filter.cats = filter.cats.filter(x => x !== c);
+      else filter.cats.push(c);
+      render();
+    };
     el.appendChild(b);
   });
 }
 function visibleVideos() {
   let list = state.videos.filter(v => {
-    if (filter.cat !== "all" && !(v.cats || []).includes(filter.cat)) return false;
+    if (filter.cats.length && !filter.cats.every(fc => (v.cats || []).includes(fc))) return false;
     if (filter.diff !== "all" && v.diff !== filter.diff) return false;
     return true;
   });
@@ -443,7 +447,7 @@ function renderGallery() {
     g.innerHTML = `<div class="empty"><h2>${state.videos.length ? "Nada con este filtro" : "Aún no hay vídeos"}</h2><p>${state.videos.length ? "Prueba otra categoría o dificultad." : "Pulsa «Añadir vídeo» para empezar tu biblioteca."}</p></div>`;
     return;
   }
-  const manual = filter.sort === "manual" && filter.cat === "all" && filter.diff === "all";
+  const manual = filter.sort === "manual";
   list.forEach(v => {
     const card = document.createElement("div");
     card.className = "card";
