@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mi Gimnasio">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Mi Gimnasio</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=Archivo+Black&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --panel-2: #1c232d;
+    --line: #2a333f;
+    --ink: #e8edf2;
+    --muted: #8b98a8;
+    --accent: #d6ff3f;
+    --accent-dim: #a9c92f;
+    --easy: #3fb950;
+    --med: #e3a008;
+    --hard: #f85149;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Archivo', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+    min-height: 100vh;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  ::selection { background: var(--accent); color: #000; }
+
+  header {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .brand h1 {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: clamp(28px, 5vw, 44px);
+    letter-spacing: -0.02em;
+    line-height: 0.95;
+    text-transform: uppercase;
+  }
+  .brand h1 span { color: var(--accent); }
+  .brand p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+  .count-pill {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 15px; font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--muted);
+    border: 1px solid var(--line); padding: 6px 14px; border-radius: 100px;
+  }
+
+  .toolbar {
+    padding: 18px 24px; display: flex; gap: 20px; flex-wrap: wrap;
+    align-items: center; border-bottom: 1px solid var(--line); background: var(--panel);
+  }
+  .field-group { display: flex; flex-direction: column; gap: 5px; }
+  .field-group > label {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+  }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    font-size: 13px; padding: 5px 12px; border-radius: 100px;
+    border: 1px solid var(--line); background: transparent; color: var(--muted);
+    cursor: pointer; transition: all .15s; font-family: inherit; white-space: nowrap;
+  }
+  .chip:hover { border-color: var(--muted); color: var(--ink); }
+  .chip.active { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 600; }
+  select {
+    font-family: inherit; font-size: 14px; background: var(--panel-2); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer;
+  }
+  .spacer { flex: 1; }
+  .btn {
+    font-family: inherit; font-size: 14px; font-weight: 500; border-radius: 8px;
+    padding: 9px 16px; cursor: pointer; border: 1px solid var(--line);
+    background: var(--panel-2); color: var(--ink); transition: all .15s;
+  }
+  .btn:hover { border-color: var(--muted); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 600; }
+  .btn-primary:hover { background: var(--accent-dim); border-color: var(--accent-dim); }
+
+  .gallery {
+    padding: 24px; display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px;
+  }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    overflow: hidden; cursor: pointer; transition: transform .18s, border-color .18s;
+    display: flex; flex-direction: column;
+  }
+  .card:hover { transform: translateY(-3px); border-color: var(--accent-dim); }
+  .card.dragging { opacity: .4; }
+  .thumb { position: relative; aspect-ratio: 16/9; background: #000 center/cover no-repeat; }
+  .thumb::after {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(circle at center, rgba(0,0,0,.15), rgba(0,0,0,.55));
+    opacity: 0; transition: opacity .18s;
+  }
+  .card:hover .thumb::after { opacity: 1; }
+  .play {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%) scale(.85);
+    width: 54px; height: 54px; background: var(--accent); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: all .18s; z-index: 2;
+  }
+  .card:hover .play { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+  .play svg { width: 22px; height: 22px; fill: #000; margin-left: 3px; }
+  .diff-tag {
+    position: absolute; top: 10px; left: 10px;
+    font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 10px;
+    border-radius: 100px; z-index: 2; color: #000;
+  }
+  .diff-easy { background: var(--easy); }
+  .diff-med { background: var(--med); }
+  .diff-hard { background: var(--hard); color: #fff; }
+  .card-body { padding: 14px 15px 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .card-title {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 600;
+    line-height: 1.1; letter-spacing: 0.01em;
+  }
+  .card-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; }
+  .tag {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 3px 9px; border-radius: 100px; background: var(--panel-2);
+    color: var(--muted); border: 1px solid var(--line);
+  }
+  .card-actions { display: flex; gap: 8px; align-items: center; }
+  .icon-btn {
+    background: transparent; border: none; color: var(--muted); cursor: pointer;
+    font-size: 13px; padding: 2px 6px; border-radius: 6px; font-family: inherit;
+  }
+  .icon-btn:hover { color: var(--ink); background: var(--panel-2); }
+  .duration { font-size: 12px; color: var(--muted); }
+
+  .empty { grid-column: 1 / -1; text-align: center; padding: 80px 20px; color: var(--muted); }
+  .empty h2 {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 26px; font-weight: 600;
+    color: var(--ink); margin-bottom: 8px; letter-spacing: 0.01em;
+  }
+
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.8); backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center; padding: 20px; z-index: 100;
+  }
+  .overlay.open { display: flex; }
+  .modal {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto;
+  }
+  .modal-wide { max-width: 900px; }
+  .modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 20px; border-bottom: 1px solid var(--line);
+  }
+  .modal-head h3 {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 600;
+    letter-spacing: 0.02em; text-transform: uppercase;
+  }
+  .close-x { background: transparent; border: none; color: var(--muted); font-size: 26px; cursor: pointer; line-height: 1; }
+  .close-x:hover { color: var(--ink); }
+  .modal-body { padding: 20px; }
+  .player-wrap { aspect-ratio: 16/9; background: #000; }
+  .player-wrap iframe { width: 100%; height: 100%; border: 0; }
+
+  .form-row { margin-bottom: 16px; }
+  .form-row label {
+    display: block; font-family: 'Barlow Condensed', sans-serif; font-size: 13px;
+    font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 6px;
+  }
+  input[type=text], input[type=url] {
+    width: 100%; font-family: inherit; font-size: 15px; background: var(--panel-2);
+    color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent-dim); outline-offset: 1px; }
+  .diff-select { display: flex; gap: 8px; }
+  .diff-opt {
+    flex: 1; text-align: center; padding: 9px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--line); font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--muted); background: transparent;
+  }
+  .diff-opt.sel-easy { background: var(--easy); color:#000; border-color: var(--easy); }
+  .diff-opt.sel-med { background: var(--med); color:#000; border-color: var(--med); }
+  .diff-opt.sel-hard { background: var(--hard); color:#fff; border-color: var(--hard); }
+  .cat-picker { display: flex; gap: 6px; flex-wrap: wrap; }
+  .cat-pick {
+    font-size: 13px; padding: 6px 12px; border-radius: 100px; border: 1px solid var(--line);
+    background: transparent; color: var(--muted); cursor: pointer; font-family: inherit;
+  }
+  .cat-pick.on { background: var(--accent); border-color: var(--accent); color:#000; font-weight:600; }
+  .add-cat { display:flex; gap:8px; margin-top:10px; }
+  .add-cat input { flex:1; }
+  .modal-foot {
+    padding: 16px 20px; border-top: 1px solid var(--line);
+    display: flex; justify-content: flex-end; gap: 10px;
+  }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .drag-handle { cursor: grab; color: var(--muted); font-size: 15px; padding: 2px 4px; user-select: none; }
+  .drag-handle:active { cursor: grabbing; }
+
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--panel-2); border: 1px solid var(--line); color: var(--ink);
+    padding: 12px 20px; border-radius: 100px; font-size: 14px; z-index: 200;
+    opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+    box-shadow: 0 8px 30px rgba(0,0,0,.4);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+
+  .banner {
+    background: var(--panel-2); border-bottom: 1px solid var(--line);
+    padding: 12px 24px; font-size: 13px; color: var(--muted);
+    display: flex; align-items: center; gap: 12px; justify-content: center;
+  }
+  .banner strong { color: var(--ink); }
+  .banner button {
+    background: transparent; border: 1px solid var(--line); color: var(--muted);
+    border-radius: 6px; padding: 4px 10px; cursor: pointer; font-family: inherit; font-size: 12px;
+  }
+  .banner button:hover { color: var(--ink); border-color: var(--muted); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+  <div class="banner" id="backupBanner" style="display:none">
+    <span><strong>Consejo:</strong> tus vídeos se guardan en este navegador. Usa «Exportar» de vez en cuando para tener una copia de seguridad.</span>
+    <button id="dismissBanner">Entendido</button>
+  </div>
+
+  <header>
+    <div class="brand">
+      <h1>Mi <span>Gimnasio</span></h1>
+      <p>Tu biblioteca de entrenamientos</p>
+    </div>
+    <div class="count-pill" id="countPill">0 vídeos</div>
+  </header>
+
+  <div class="toolbar">
+    <div class="field-group">
+      <label>Categoría</label>
+      <div class="chips" id="catFilter"></div>
+    </div>
+    <div class="field-group">
+      <label>Dificultad</label>
+      <div class="chips" id="diffFilter">
+        <button class="chip active" data-diff="all">Todas</button>
+        <button class="chip" data-diff="easy">Fácil</button>
+        <button class="chip" data-diff="med">Media</button>
+        <button class="chip" data-diff="hard">Difícil</button>
+      </div>
+    </div>
+    <div class="field-group">
+      <label>Orden</label>
+      <select id="sortSelect">
+        <option value="manual">Manual (arrastrar)</option>
+        <option value="title">Título A–Z</option>
+        <option value="recent">Añadido recientemente</option>
+      </select>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn" id="exportBtn">Exportar</button>
+    <button class="btn" id="importBtn">Importar</button>
+    <button class="btn btn-primary" id="addBtn">+ Añadir vídeo</button>
+  </div>
+
+  <div class="gallery" id="gallery"></div>
+
+  <div class="overlay" id="playerOverlay">
+    <div class="modal modal-wide">
+      <div class="modal-head">
+        <h3 id="playerTitle">Vídeo</h3>
+        <button class="close-x" data-close-player>&times;</button>
+      </div>
+      <div class="player-wrap" id="playerWrap"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="formOverlay">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 id="formTitle">Añadir vídeo</h3>
+        <button class="close-x" data-close-form>&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <label>Enlace de YouTube</label>
+          <input type="url" id="fUrl" placeholder="https://www.youtube.com/watch?v=...">
+          <div class="hint">Pega la URL y saco la miniatura automáticamente.</div>
+        </div>
+        <div class="form-row">
+          <label>Título</label>
+          <input type="text" id="fTitle" placeholder="Ej. Rutina de piernas 20 min">
+        </div>
+        <div class="form-row">
+          <label>Duración (opcional)</label>
+          <input type="text" id="fDuration" placeholder="Ej. 12:30">
+        </div>
+        <div class="form-row">
+          <label>Dificultad</label>
+          <div class="diff-select" id="fDiff">
+            <button class="diff-opt" data-d="easy">Fácil</button>
+            <button class="diff-opt" data-d="med">Media</button>
+            <button class="diff-opt" data-d="hard">Difícil</button>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Categorías</label>
+          <div class="cat-picker" id="fCats"></div>
+          <div class="add-cat">
+            <input type="text" id="newCat" placeholder="Nueva categoría...">
+            <button class="btn" id="addCatBtn">Crear</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" data-close-form>Cancelar</button>
+        <button class="btn btn-primary" id="saveBtn">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="importFile" accept="application/json" style="display:none">
+  <div class="toast" id="toast"></div>
+
+<script>
+const DEFAULT_CATS = ["piernas","cardio","core","movilidad","brazos","espalda"];
+let state = { videos: [], cats: [...DEFAULT_CATS] };
+let filter = { cat: "all", diff: "all", sort: "manual" };
+let editingId = null;
+let formSel = { diff: null, cats: [] };
+let dragId = null;
+
+// ---------- IndexedDB ----------
+const DB_NAME = "gimnasioDB", STORE = "kv", KEY = "state";
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => { req.result.createObjectStore(STORE); };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function dbGet() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, "readonly");
+    const r = tx.objectStore(STORE).get(KEY);
+    r.onsuccess = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+  });
+}
+async function dbSet(value) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, "readwrite");
+    tx.objectStore(STORE).put(value, KEY);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function load() {
+  try {
+    const data = await dbGet();
+    if (data) state = data;
+    if (!state.cats || !state.cats.length) state.cats = [...DEFAULT_CATS];
+    if (!state.videos) state.videos = [];
+  } catch (e) { console.error("Error al cargar", e); }
+}
+async function save() {
+  try { await dbSet(JSON.parse(JSON.stringify(state))); }
+  catch (e) { console.error("No se pudo guardar", e); showToast("Error al guardar los datos"); }
+}
+
+// ---------- youtube ----------
+function extractId(url) {
+  if (!url) return null;
+  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]{11})/);
+  if (m) return m[1];
+  if (/^[A-Za-z0-9_-]{11}$/.test(url.trim())) return url.trim();
+  return null;
+}
+function thumbUrl(id) { return `https://img.youtube.com/vi/${id}/hqdefault.jpg`; }
+
+// ---------- render ----------
+function render() {
+  renderCatFilter();
+  renderGallery();
+  const n = state.videos.length;
+  document.getElementById("countPill").textContent = n + (n === 1 ? " vídeo" : " vídeos");
+}
+function renderCatFilter() {
+  const el = document.getElementById("catFilter");
+  el.innerHTML = "";
+  const all = document.createElement("button");
+  all.className = "chip" + (filter.cat === "all" ? " active" : "");
+  all.textContent = "Todas";
+  all.onclick = () => { filter.cat = "all"; render(); };
+  el.appendChild(all);
+  state.cats.forEach(c => {
+    const b = document.createElement("button");
+    b.className = "chip" + (filter.cat === c ? " active" : "");
+    b.textContent = c;
+    b.onclick = () => { filter.cat = c; render(); };
+    el.appendChild(b);
+  });
+}
+function visibleVideos() {
+  let list = state.videos.filter(v => {
+    if (filter.cat !== "all" && !(v.cats || []).includes(filter.cat)) return false;
+    if (filter.diff !== "all" && v.diff !== filter.diff) return false;
+    return true;
+  });
+  if (filter.sort === "title") list.sort((a,b) => (a.title||"").localeCompare(b.title||""));
+  else if (filter.sort === "recent") list.sort((a,b) => b.added - a.added);
+  return list;
+}
+const DIFF_LABEL = { easy:"Fácil", med:"Media", hard:"Difícil" };
+function renderGallery() {
+  const g = document.getElementById("gallery");
+  g.innerHTML = "";
+  const list = visibleVideos();
+  if (!list.length) {
+    g.innerHTML = `<div class="empty"><h2>${state.videos.length ? "Nada con este filtro" : "Aún no hay vídeos"}</h2><p>${state.videos.length ? "Prueba otra categoría o dificultad." : "Pulsa «Añadir vídeo» para empezar tu biblioteca."}</p></div>`;
+    return;
+  }
+  const manual = filter.sort === "manual" && filter.cat === "all" && filter.diff === "all";
+  list.forEach(v => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.draggable = manual;
+    if (manual) {
+      card.ondragstart = () => { dragId = v.id; card.classList.add("dragging"); };
+      card.ondragend = () => { dragId = null; card.classList.remove("dragging"); };
+      card.ondragover = (e) => e.preventDefault();
+      card.ondrop = (e) => { e.preventDefault(); reorder(dragId, v.id); };
+    }
+    const diffTag = v.diff ? `<span class="diff-tag diff-${v.diff}">${DIFF_LABEL[v.diff]}</span>` : "";
+    const tags = (v.cats||[]).map(c => `<span class="tag">${escapeHtml(c)}</span>`).join("");
+    const dur = v.duration ? `<span class="duration">⏱ ${escapeHtml(v.duration)}</span>` : "";
+    card.innerHTML = `
+      <div class="thumb" style="background-image:url('${thumbUrl(v.ytid)}')">
+        ${diffTag}
+        <div class="play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+      </div>
+      <div class="card-body">
+        <div class="card-title">${escapeHtml(v.title || "Sin título")}</div>
+        <div class="card-tags">${tags}</div>
+        <div class="card-actions">
+          ${dur}
+          <div style="flex:1"></div>
+          ${manual ? '<span class="drag-handle" title="Arrastra para reordenar">⠿</span>' : ''}
+          <button class="icon-btn" data-edit="${v.id}">Editar</button>
+          <button class="icon-btn" data-del="${v.id}">Borrar</button>
+        </div>
+      </div>`;
+    card.querySelector(".thumb").onclick = () => openPlayer(v);
+    card.querySelector(".card-title").onclick = () => openPlayer(v);
+    card.querySelector(`[data-edit="${v.id}"]`).onclick = (e) => { e.stopPropagation(); openForm(v.id); };
+    card.querySelector(`[data-del="${v.id}"]`).onclick = (e) => { e.stopPropagation(); del(v.id); };
+    g.appendChild(card);
+  });
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function reorder(from, to) {
+  if (!from || from === to) return;
+  const arr = state.videos;
+  const fi = arr.findIndex(v => v.id === from);
+  const ti = arr.findIndex(v => v.id === to);
+  if (fi < 0 || ti < 0) return;
+  const [item] = arr.splice(fi, 1);
+  arr.splice(ti, 0, item);
+  save(); render();
+}
+
+// ---------- player ----------
+function openPlayer(v) {
+  document.getElementById("playerTitle").textContent = v.title || "Vídeo";
+  document.getElementById("playerWrap").innerHTML =
+    `<iframe src="https://www.youtube.com/embed/${v.ytid}?autoplay=1" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`;
+  document.getElementById("playerOverlay").classList.add("open");
+}
+function closePlayer() {
+  document.getElementById("playerOverlay").classList.remove("open");
+  document.getElementById("playerWrap").innerHTML = "";
+}
+
+// ---------- form ----------
+function openForm(id) {
+  editingId = id || null;
+  formSel = { diff: null, cats: [] };
+  const v = id ? state.videos.find(x => x.id === id) : null;
+  document.getElementById("formTitle").textContent = id ? "Editar vídeo" : "Añadir vídeo";
+  document.getElementById("fUrl").value = v ? `https://youtu.be/${v.ytid}` : "";
+  document.getElementById("fTitle").value = v ? (v.title||"") : "";
+  document.getElementById("fDuration").value = v ? (v.duration||"") : "";
+  if (v) { formSel.diff = v.diff || null; formSel.cats = [...(v.cats||[])]; }
+  renderDiffSelect(); renderCatPicker();
+  document.getElementById("formOverlay").classList.add("open");
+  document.getElementById("fUrl").focus();
+}
+function closeForm() { document.getElementById("formOverlay").classList.remove("open"); }
+function renderDiffSelect() {
+  document.querySelectorAll("#fDiff .diff-opt").forEach(b => {
+    const d = b.dataset.d;
+    b.className = "diff-opt" + (formSel.diff === d ? " sel-"+d : "");
+  });
+}
+function renderCatPicker() {
+  const el = document.getElementById("fCats");
+  el.innerHTML = "";
+  state.cats.forEach(c => {
+    const b = document.createElement("button");
+    b.className = "cat-pick" + (formSel.cats.includes(c) ? " on" : "");
+    b.textContent = c;
+    b.onclick = () => {
+      if (formSel.cats.includes(c)) formSel.cats = formSel.cats.filter(x => x !== c);
+      else formSel.cats.push(c);
+      renderCatPicker();
+    };
+    el.appendChild(b);
+  });
+}
+function saveVideo() {
+  const url = document.getElementById("fUrl").value.trim();
+  const ytid = extractId(url);
+  if (!ytid) { showToast("No reconozco ese enlace de YouTube. Revisa la URL."); return; }
+  const title = document.getElementById("fTitle").value.trim();
+  const duration = document.getElementById("fDuration").value.trim();
+  if (editingId) {
+    const v = state.videos.find(x => x.id === editingId);
+    Object.assign(v, { ytid, title, duration, diff: formSel.diff, cats: [...formSel.cats] });
+  } else {
+    state.videos.push({
+      id: "v" + Date.now() + Math.random().toString(36).slice(2,6),
+      ytid, title, duration, diff: formSel.diff, cats: [...formSel.cats], added: Date.now()
+    });
+  }
+  save(); closeForm(); render();
+  showToast(editingId ? "Vídeo actualizado" : "Vídeo añadido");
+}
+function del(id) {
+  const v = state.videos.find(x => x.id === id);
+  if (!confirm(`¿Borrar "${v?.title || 'este vídeo'}"?`)) return;
+  state.videos = state.videos.filter(x => x.id !== id);
+  save(); render();
+  showToast("Vídeo borrado");
+}
+
+// ---------- export / import ----------
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "mi-gimnasio-backup.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast("Copia exportada");
+}
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!data.videos) throw new Error("formato no válido");
+      state = { videos: data.videos, cats: data.cats && data.cats.length ? data.cats : [...DEFAULT_CATS] };
+      save(); render();
+      showToast("Datos importados correctamente");
+    } catch (e) { showToast("No pude leer ese archivo. ¿Es un backup válido?"); }
+  };
+  reader.readAsText(file);
+}
+
+// ---------- toast ----------
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
+}
+
+// ---------- events ----------
+document.getElementById("addBtn").onclick = () => openForm(null);
+document.getElementById("saveBtn").onclick = saveVideo;
+document.getElementById("exportBtn").onclick = exportData;
+document.getElementById("importBtn").onclick = () => document.getElementById("importFile").click();
+document.getElementById("importFile").onchange = (e) => { if (e.target.files[0]) importData(e.target.files[0]); e.target.value=""; };
+document.querySelectorAll("[data-close-player]").forEach(b => b.onclick = closePlayer);
+document.querySelectorAll("[data-close-form]").forEach(b => b.onclick = closeForm);
+document.getElementById("playerOverlay").onclick = (e) => { if (e.target.id === "playerOverlay") closePlayer(); };
+document.getElementById("formOverlay").onclick = (e) => { if (e.target.id === "formOverlay") closeForm(); };
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") { closePlayer(); closeForm(); } });
+document.querySelectorAll("#fDiff .diff-opt").forEach(b => {
+  b.onclick = () => { formSel.diff = formSel.diff === b.dataset.d ? null : b.dataset.d; renderDiffSelect(); };
+});
+document.getElementById("addCatBtn").onclick = () => {
+  const inp = document.getElementById("newCat");
+  const name = inp.value.trim().toLowerCase();
+  if (!name) return;
+  if (!state.cats.includes(name)) { state.cats.push(name); save(); }
+  if (!formSel.cats.includes(name)) formSel.cats.push(name);
+  inp.value = "";
+  renderCatPicker();
+};
+document.getElementById("newCat").onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); document.getElementById("addCatBtn").click(); } };
+document.getElementById("diffFilter").querySelectorAll(".chip").forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll("#diffFilter .chip").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    filter.diff = b.dataset.diff;
+    render();
+  };
+});
+document.getElementById("sortSelect").onchange = (e) => { filter.sort = e.target.value; render(); };
+
+document.getElementById("fUrl").addEventListener("blur", async () => {
+  const url = document.getElementById("fUrl").value.trim();
+  const id = extractId(url);
+  const titleField = document.getElementById("fTitle");
+  if (!id || titleField.value.trim()) return;
+  try {
+    const r = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`);
+    if (r.ok) { const d = await r.json(); if (d.title) titleField.value = d.title; }
+  } catch (e) { /* si falla, título a mano */ }
+});
+
+// backup banner (una vez)
+const dismissKey = "gym-banner-dismissed";
+document.getElementById("dismissBanner").onclick = () => {
+  document.getElementById("backupBanner").style.display = "none";
+  try { localStorage.setItem(dismissKey, "1"); } catch(e){}
+};
+
+// ---------- service worker ----------
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+
+// ---------- init ----------
+(async () => {
+  await load();
+  render();
+  try { if (!localStorage.getItem(dismissKey)) document.getElementById("backupBanner").style.display = "flex"; }
+  catch(e){ document.getElementById("backupBanner").style.display = "flex"; }
+})();
+</script>
+</body>
+</html>
